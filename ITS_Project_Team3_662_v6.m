@@ -28,7 +28,7 @@ candTypes = {'Normal','Lognormal','Gamma','Weibull'};
 bestPD    = struct('name',cell(1,4),'pd',cell(1,4));
 for i = 1:4
     d    = T_speed_data{:,i};
-    % ... rest of your loop ...
+
 end
 
 % candidate distributions to test
