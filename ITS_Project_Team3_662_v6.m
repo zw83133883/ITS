@@ -67,6 +67,27 @@ for i = 1:4
     [~,bestIdx]      = max(pVals);
     bestPD(i).name  = candTypes{bestIdx};
     bestPD(i).pd    = pdFits{bestIdx};
+    
+    %display all candidate functions parameters along with KS p‐value
+fprintf('\nParameters for %s:\n', dataNames{i});
+for j = 1:numel(candTypes)
+    pdj = pdFits{j};
+    switch candTypes{j}
+      case 'Normal'
+        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
+                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
+      case 'Lognormal'
+        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
+                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
+      case 'Gamma'
+        fprintf('  %-8s  a = %.3f, b = %.3f,       KS p = %.3f\n', ...
+                candTypes{j}, pdj.a, pdj.b, pVals(j));
+      case 'Weibull'
+        fprintf('  %-8s  A = %.3f, B = %.3f,       KS p = %.3f\n', ...
+                candTypes{j}, pdj.A, pdj.B, pVals(j));
+    end
+end
+fprintf('  → selected: %s\n', bestPD(i).name);
 end
 
 %all QQplots in one 2×2 subplot
