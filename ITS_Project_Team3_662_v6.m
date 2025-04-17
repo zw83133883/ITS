@@ -8,50 +8,79 @@
 clear; clc; close all;
 
 % load the speed data 
-load('Supporting_Data_Team_02.mat');  
-% extract each column
-s65_data = T_speed_data{:,1};
-s50_data = T_speed_data{:,2};
-s40_data = T_speed_data{:,3};
-s15_data = T_speed_data{:,4};
+load('Supporting_Data_Team_02.mat');  %this creates two primary datasets, t_speed data x4 and traffic mode
+
+% build a little helper cell so you can keep using dataCell{i}
+dataCell = cell(1,4);
+for i = 1:4
+  dataCell{i} = T_speed_data{:,i};
+end
+
+% interactively inspect each series in dfittool
+dataNames = {'S65','S50','S40','S15'};
+for i = 1:4
+    fprintf('Launching dfittool for %s – close window when done\n', dataNames{i});
+    dfittool(T_speed_data{:,i});
+end
+
+% now continue with scripted candidate‐distribution fitting...
+candTypes = {'Normal','Lognormal','Gamma','Weibull'};
+bestPD    = struct('name',cell(1,4),'pd',cell(1,4));
+for i = 1:4
+    d    = T_speed_data{:,i};
+    % ... rest of your loop ...
+end
+
+% candidate distributions to test
+candTypes = {'Normal','Lognormal','Gamma','Weibull'};%can we re-code this the long way using DFITTOOL homework methods
+dataNames = {'S65','S50','S40','S15'};
+bestPD = struct('name',cell(1,4),'pd',cell(1,4));  % to store best fit for each column
 
 % candidate distributions to test
 candTypes = {'Normal','Lognormal','Gamma','Weibull'};
 dataNames = {'S65','S50','S40','S15'};
-bestPD = struct('name',cell(1,4),'pd',cell(1,4));  % to store best fit for each column
+bestPD    = struct('name',cell(1,4),'pd',cell(1,4));
 
+%all S## “Fits” in one 2×2 subplot
+figure('Name','All Speed Fits','NumberTitle','off');
 for i = 1:4
-    dataCell{i} = T_speed_data{:,i};
-    d = dataCell{i};
-    pVals = zeros(1, length(candTypes));
-    pdFits = cell(1, length(candTypes));
-    
-    figure;
-    histogram(d, 'Normalization','pdf'); 
-    hold on;
-    x_rng = linspace(min(d), max(d), 100);
-    cols = lines(length(candTypes));
-    for j = 1:length(candTypes)
-        pdFits{j} = fitdist(d, candTypes{j});
-        % run ks test
-        [~, pVal, ~] = kstest(d, 'CDF', pdFits{j});
-        pVals(j) = pVal;
-        % plot pdf
-        plot(x_rng, pdf(pdFits{j}, x_rng), 'Color', cols(j,:), 'LineWidth',2);
+    d       = dataCell{i};                    %original d = T_speed_data{:,i}
+    pVals   = zeros(1,numel(candTypes));     % original pVals
+    pdFits  = cell(1,numel(candTypes));      % original pdFits
+    x_rng   = linspace(min(d),max(d),200);
+    cols    = lines(numel(candTypes));
+
+    subplot(2,2,i);
+    histogram(d,'Normalization','pdf'); hold on;
+    for j = 1:numel(candTypes)
+        pdFits{j} = fitdist(d,candTypes{j});           % original fit
+        [~,pVals(j)] = kstest(d,'CDF',pdFits{j});      % original KS test
+        plot(x_rng, pdf(pdFits{j},x_rng), ...
+             'Color',cols(j,:),'LineWidth',1.5);
     end
     title(['Fits for ', dataNames{i}]);
     xlabel('speed (mph)'); ylabel('pdf');
-      legend(candTypes, 'Location','best');
+    legend(candTypes,'Location','best','FontSize',6);
     hold off;
-    
-    % choose best candidate based on highest ks p-value
-    [maxP, bestIdx] = max(pVals);
-    bestPD(i).name = candTypes{bestIdx};
-    bestPD(i).pd = pdFits{bestIdx};
-    fprintf('%s best fit: %s, ks p-value = %.4f\n', dataNames{i}, bestPD(i).name, maxP);
-    nPts = length(d);
 
-    switch bestPD(i).name
+    % store best
+    [~,bestIdx]      = max(pVals);
+    bestPD(i).name  = candTypes{bestIdx};
+    bestPD(i).pd    = pdFits{bestIdx};
+end
+
+%all QQplots in one 2×2 subplot
+figure('Name','All QQ Plots','NumberTitle','off');
+for i = 1:4
+    d    = dataCell{i};               % same as before
+    nPts = numel(d);
+
+    subplot(2,2,i);
+    qqplot(d, random(bestPD(i).pd,nPts,1)); 
+    title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
+end
+
+    switch bestPD(i).name %is this part nesescary, can instead we just list all the results out in the command window and provide selection criteria
         case 'Normal'
             fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Lognormal'
@@ -62,11 +91,10 @@ for i = 1:4
             fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', bestPD(i).pd.A, bestPD(i).pd.B);
 
     end
-    % show qq plot for best candidate
-    figure;
-    qqplot(d, random(bestPD(i).pd, nPts, 1));
-    title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
-end
+    % % show qq plot for best candidate
+    % figure;
+    % qqplot(d, random(bestPD(i).pd, nPts, 1));
+    % title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
 
 %% part 2: run sim with user inputs
 disp(' ');
@@ -80,7 +108,7 @@ uniq  = input('enter oversample parameter for genlogntrips (suggested 1-20): ');
 simulateITS(nT, confLev, mu, sigma, uniq, bestPD);
 
 %% simulate ITS
-function simulateITS(nT, confLev, mu, sigma, uniq, bestPD)
+function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     % this function runs the routing simulation using the best fit speed distributions
     % bestPD is a structure array with fields:
     %   bestPD(1): best fit for S65 (nominal interstate speeds)
