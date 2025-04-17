@@ -108,7 +108,7 @@ uniq  = input('enter oversample parameter for genlogntrips (suggested 1-20): ');
 simulateITS(nT, confLev, mu, sigma, uniq, bestPD);
 
 %% simulate ITS
-function simulateITS(nT, confLev, mu, sigma, uniq, bestPD)
+function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     % this function runs the routing simulation using the best fit speed distributions
     % bestPD is a structure array with fields:
     %   bestPD(1): best fit for S65 (nominal interstate speeds)
