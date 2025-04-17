@@ -119,12 +119,12 @@ end
 
 %% part 2: run sim with user inputs
 disp(' ');
-disp('entering simulation phase baby!');
-nT    = input('enter number of trips to simulate: ');
-confLev = input('enter confidence level (suggested .90-.99999): ');
-mu    = input('enter lognormal mu for trip distances (default to 1): ');%need code to display these distribution perameters in section 1
-sigma = input('enter lognormal sigma for trip distances (default to 1.6): ');%need code to display these perameters in section 1
-uniq  = input('enter oversample parameter for genlogntrips (suggested 1-20): ');% used to control how many candidate trips are generated before selecting a subset that matches the desired lognormal distribution %default to 20, but use less when testing the code
+disp('entering simulation phase! Press ctrl+c to abort.');
+nT    = input('enter number of trips to simulate. Should be between 1 (fast) and 9999 (long wait): ');
+confLev = input('enter confidence level (.90-.99999 suggested ---> .95): ');
+mu    = input('enter lognormal mu for trip distances (assignment req. --> 1): ');
+sigma = input('enter lognormal sigma for trip distances (assignment req. --> 1.6): ');
+uniq  = input('enter oversample parameter for genlogntrips (1-20, suggested --> 1 ): ');% used to control how many candidate trips are generated before selecting a subset that matches the desired lognormal distribution %default to 20, but use less when testing the code
 
 simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
 
@@ -150,6 +150,23 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
     
+    %Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
+
+        d = trips(:,3)/100;  % convert back from hundredths of a mile
+    fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
+            mean(d), std(d));
+    
+    figure;
+    histogram(d,'Normalization','pdf');
+    hold on;
+    x = linspace(min(d),max(d),200);
+    theoretical = pdf( makedist('Lognormal','mu',1,'sigma',1.6), x );
+    plot(x, theoretical, 'r-','LineWidth',1.5);
+    hold off;
+    xlabel('Distance (miles)');
+    ylabel('PDF');
+    title('Trip‐lengths: empirical vs. LogNormal(\mu=1,\sigma=1.6)');
+    legend('Empirical','Theoretical');
     %% nominal routing
     Gb = G;  % baseline graph
     numE = height(Gb.Edges);
@@ -234,7 +251,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
         end
     end
     
-    %% complie results
+    %% compile results
     valid = ~isnan(tBase) & ~isnan(tPred);
     tBase = tBase(valid);
     tPred = tPred(valid);
