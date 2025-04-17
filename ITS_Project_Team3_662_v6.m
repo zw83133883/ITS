@@ -105,7 +105,7 @@ mu    = input('enter lognormal mu for trip distances (default to 1): ');%need co
 sigma = input('enter lognormal sigma for trip distances (default to 1.6): ');%need code to display these perameters in section 1
 uniq  = input('enter oversample parameter for genlogntrips (suggested 1-20): ');% used to control how many candidate trips are generated before selecting a subset that matches the desired lognormal distribution %default to 20, but use less when testing the code
 
-simulateITS(nT, confLev, mu, sigma, uniq, bestPD);
+simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
 
 %% simulate ITS
 function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
