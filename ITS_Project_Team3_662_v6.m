@@ -10,10 +10,9 @@ clear; clc; close all;
 % load the speed data 
 load('Supporting_Data_Team_02.mat');  %this creates two primary datasets, t_speed data x4 and traffic mode
 
-% build a little helper cell so you can keep using dataCell{i}
 dataCell = cell(1,4);
 for i = 1:4
-  dataCell{i} = T_speed_data{:,i};
+  dataCell{i} = T_speed_data{:,i};%format the data in a simpler way for later
 end
 
 % interactively inspect each series in dfittool
