@@ -51,7 +51,9 @@ for i = 1:4
     cols    = lines(numel(candTypes));
 
     subplot(2,2,i);
-    histogram(d,'Normalization','pdf'); hold on;
+     thebigoleoneoffourhistograms= histogram(d, 42, 'Normalization','pdf');%increased bin size to 42 to make it snappier
+    set(thebigoleoneoffourhistograms,'HandleVisibility','off'); %handle visibility should correct our legend issue
+    hold on; 
     for j = 1:numel(candTypes)
         pdFits{j} = fitdist(d,candTypes{j});           % original fit
         [~,pVals(j)] = kstest(d,'CDF',pdFits{j});      % original KS test
