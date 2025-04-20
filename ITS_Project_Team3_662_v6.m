@@ -7,8 +7,9 @@
 % part 1: distribution selection
 clear; clc; close all;
 
-% load the speed data 
+% load the data sets
 load('Supporting_Data_Team_02.mat');  %this creates two primary datasets, t_speed data x4 and traffic mode
+load('EastCoast.mat');
 
 dataCell = cell(1,4);
 for i = 1:4
@@ -27,7 +28,6 @@ candTypes = {'Normal','Lognormal','Gamma','Weibull'};
 bestPD    = struct('name',cell(1,4),'pd',cell(1,4));
 for i = 1:4
     d    = T_speed_data{:,i};
-
 end
 
 % candidate distributions to test
@@ -144,9 +144,6 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
     parpool('local',6);%change this to whatever your computer and license will allow
     
-    %% load data
-    load('EastCoast.mat');      % lvariable G
-    load('Supporting_Data_Team_02.mat'); % for road condition data
     
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
