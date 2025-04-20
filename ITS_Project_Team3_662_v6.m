@@ -86,7 +86,7 @@ for i = 1:4
     subplot(2,2,i);
     qqplot(d, random(bestPD(i).pd,nPts,1)); 
     title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
-end    
+
     switch bestPD(i).name %is this part nesescary, can instead we just list all the results out in the command window and provide selection criteria
         case 'Normal'
             fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
@@ -102,16 +102,42 @@ end
     % figure;
     % qqplot(d, random(bestPD(i).pd, nPts, 1));
     % title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
-%% part 2: run sim with user inputs
+end
+%% Part 2: Run simulation with user inputs
 disp(' ');
-disp('entering simulation phase! Press ctrl+c to abort.');
-nT    = input('enter number of trips to simulate. Should be between 1 (fast) and 9999 (long wait): ');
-confLev = input('enter confidence level (.90-.99999 suggested ---> .95): ');
-mu    = input('enter lognormal mu for trip distances (assignment req. --> 1): ');
-sigma = input('enter lognormal sigma for trip distances (assignment req. --> 1.6): ');
-uniq  = input('enter oversample parameter for genlogntrips (1-20, suggested --> 1 ): ');% used to control how many candidate trips are generated before selecting a subset that matches the desired lognormal distribution %default to 20, but use less when testing the code
+disp('Entering simulation phase! Press Ctrl+C to abort at any time.');
+
+% Prompt for number of trips
+nT = input('Enter number of trips to simulate [1–9999, default = 1000]: ');
+if isempty(nT), nT = 1000; end
+if nT < 1 || nT > 9999
+    error('Number of trips must be between 1 and 9999.');
+end
+
+% Prompt for confidence level
+confLev = input('Enter confidence level (0.90–0.99999, default = 0.95): ');
+if isempty(confLev), confLev = 0.95; end
+if confLev < 0.90 || confLev > 0.99999
+    error('Confidence level must be between 0.90 and 0.99999.');
+end
+
+% Prompt for lognormal mu
+mu = input('Enter lognormal mu for trip distances (default = 1): ');
+if isempty(mu), mu = 1; end
+
+% Prompt for lognormal sigma
+sigma = input('Enter lognormal sigma for trip distances (default = 1.6): ');
+if isempty(sigma), sigma = 1.6; end
+
+% Prompt for oversampling parameter
+uniq = input('Enter oversample parameter for genlogntrips [1–20, default = 1]: ');
+if isempty(uniq), uniq = 1; end
+if uniq < 1 || uniq > 20
+    error('Oversample parameter must be between 1 and 20.');
+end
 
 simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
+
 
 %% simulate ITS
 function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
