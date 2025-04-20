@@ -23,22 +23,8 @@ for i = 1:4
     dfittool(T_speed_data{:,i});
 end
 
-% now continue with scripted candidate‐distribution fitting...
 candTypes = {'Normal','Lognormal','Gamma','Weibull'};
-bestPD    = struct('name',cell(1,4),'pd',cell(1,4));
-for i = 1:4
-    d    = T_speed_data{:,i};
-end
-
-% candidate distributions to test
-candTypes = {'Normal','Lognormal','Gamma','Weibull'};%can we re-code this the long way using DFITTOOL homework methods
-dataNames = {'S65','S50','S40','S15'};
-bestPD = struct('name',cell(1,4),'pd',cell(1,4));  % to store best fit for each column
-
-% candidate distributions to test
-candTypes = {'Normal','Lognormal','Gamma','Weibull'};
-dataNames = {'S65','S50','S40','S15'};
-bestPD    = struct('name',cell(1,4),'pd',cell(1,4));
+bestPD = struct('name',cell(1,4),'pd',cell(1,4));
 
 %all S## “Fits” in one 2×2 subplot
 figure('Name','All Speed Fits','NumberTitle','off');
@@ -100,8 +86,7 @@ for i = 1:4
     subplot(2,2,i);
     qqplot(d, random(bestPD(i).pd,nPts,1)); 
     title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
-end
-
+end    
     switch bestPD(i).name %is this part nesescary, can instead we just list all the results out in the command window and provide selection criteria
         case 'Normal'
             fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
@@ -117,7 +102,6 @@ end
     % figure;
     % qqplot(d, random(bestPD(i).pd, nPts, 1));
     % title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
-
 %% part 2: run sim with user inputs
 disp(' ');
 disp('entering simulation phase! Press ctrl+c to abort.');
