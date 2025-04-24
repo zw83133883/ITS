@@ -26,18 +26,20 @@ end
 candTypes = {'Normal','Lognormal','Gamma','Weibull'};
 bestPD = struct('name',cell(1,4),'pd',cell(1,4));
 
-%all S## “Fits” in one 2×2 subplot
+% all S## “Fits” in one 2×2 subplot
 figure('Name','All Speed Fits','NumberTitle','off');
 for i = 1:4
-    d       = dataCell{i};                    %original d = T_speed_data{:,i}
+    d       = dataCell{i};                   % original d = T_speed_data{:,i}
     pVals   = zeros(1,numel(candTypes));     % original pVals
     pdFits  = cell(1,numel(candTypes));      % original pdFits
     x_rng   = linspace(min(d),max(d),200);
     cols    = lines(numel(candTypes));
 
     subplot(2,2,i);
-     thebigoleoneoffourhistograms= histogram(d, 42, 'Normalization','pdf');%increased bin size to 42 to make it snappier
-    set(thebigoleoneoffourhistograms,'HandleVisibility','off'); %handle visibility should correct our legend issue
+    % increased bin size to 42 to make it snappier
+    thebigoleoneoffourhistograms= histogram(d, 42, 'Normalization','pdf');
+    % handle visibility should correct our legend issue
+    set(thebigoleoneoffourhistograms,'HandleVisibility','off'); 
     hold on; 
     for j = 1:numel(candTypes)
         pdFits{j} = fitdist(d,candTypes{j});           % original fit
@@ -55,47 +57,53 @@ for i = 1:4
     bestPD(i).name  = candTypes{bestIdx};
     bestPD(i).pd    = pdFits{bestIdx};
     
-    %display all candidate functions parameters along with KS p‐value
-fprintf('\nParameters for %s:\n', dataNames{i});
-for j = 1:numel(candTypes)
-    pdj = pdFits{j};
-    switch candTypes{j}
-      case 'Normal'
-        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
-                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
-      case 'Lognormal'
-        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
-                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
-      case 'Gamma'
-        fprintf('  %-8s  a = %.3f, b = %.3f,       KS p = %.3f\n', ...
-                candTypes{j}, pdj.a, pdj.b, pVals(j));
-      case 'Weibull'
-        fprintf('  %-8s  A = %.3f, B = %.3f,       KS p = %.3f\n', ...
-                candTypes{j}, pdj.A, pdj.B, pVals(j));
+    % display all candidate functions parameters along with KS p‐value
+    fprintf('\nParameters for %s:\n', dataNames{i});
+    for j = 1:numel(candTypes)
+        pdj = pdFits{j};
+        switch candTypes{j}
+          case 'Normal'
+            fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
+                    candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
+          case 'Lognormal'
+            fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
+                    candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
+          case 'Gamma'
+            fprintf('  %-8s  a = %.3f, b = %.3f,       KS p = %.3f\n', ...
+                    candTypes{j}, pdj.a, pdj.b, pVals(j));
+          case 'Weibull'
+            fprintf('  %-8s  A = %.3f, B = %.3f,       KS p = %.3f\n', ...
+                    candTypes{j}, pdj.A, pdj.B, pVals(j));
+        end
     end
-end
 fprintf('  → selected: %s\n', bestPD(i).name);
 end
 
-%all QQplots in one 2×2 subplot
+% all QQplots in one 2×2 subplot
 figure('Name','All QQ Plots','NumberTitle','off');
 for i = 1:4
-    d    = dataCell{i};               % same as before
+    d    = dataCell{i};% same as before
     nPts = numel(d);
 
     subplot(2,2,i);
     qqplot(d, random(bestPD(i).pd,nPts,1)); 
     title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
 
-    switch bestPD(i).name %is this part nesescary, can instead we just list all the results out in the command window and provide selection criteria
+    switch bestPD(i).name % is this part nesescary, can instead we just 
+        % list all the results out in the command window and provide 
+        % selection criteria
         case 'Normal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
+            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
+                bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Lognormal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
+            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
+                bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Gamma'
-            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', bestPD(i).pd.a, bestPD(i).pd.b);
+            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', ...
+                bestPD(i).pd.a, bestPD(i).pd.b);
         case 'Weibull'
-            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', bestPD(i).pd.A, bestPD(i).pd.B);
+            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', ...
+                bestPD(i).pd.A, bestPD(i).pd.B);
 
     end
     % % show qq plot for best candidate
@@ -141,8 +149,8 @@ simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
 
 %% simulate ITS
 function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
-    % this function runs the routing simulation using the best fit speed distributions
-    % bestPD is a structure array with fields:
+    % this function runs the routing simulation using the best fit 
+    % speed distributions bestPD is a structure array with fields:
     %   bestPD(1): best fit for S65 (nominal interstate speeds)
     %   bestPD(2): best fit for S50 (nominal highway speeds)
     %   bestPD(3): best fit for S40 (construction conditions)
@@ -151,16 +159,16 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     mpH = 60;  % minutes per hour
     
     %% parallel pool
-    delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
-    parpool('local',6);%change this to whatever your computer and license will allow
-    
+    % clear out the pool in case theres something idle in t here
+    delete(gcp('nocreate'));  
+    % change this to whatever your computer and license will allow
+    parpool('local',6);
     
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
     
-    %Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
-
-        d = trips(:,3)/100;  % convert back from hundredths of a mile
+    % Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
+    d = trips(:,3)/100;  % convert back from hundredths of a mile
     fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
             mean(d), std(d));
     
@@ -175,6 +183,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     ylabel('PDF');
     title('Trip‐lengths: empirical vs. LogNormal(\mu=1,\sigma=1.6)');
     legend('Empirical','Theoretical');
+
     %% nominal routing
     Gb = G;  % baseline graph
     numE = height(Gb.Edges);
@@ -275,7 +284,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     ciLo = mSave - err;
     ciHi = mSave + err;
     
-    %display results
+    %% display results
     fprintf('\npredictive routing savings:\n');
     fprintf('mean: %.2f%%, 95%% ci: [%.2f%%, %.2f%%]\n', mSave, ciLo, ciHi);
     if ciLo > 5
