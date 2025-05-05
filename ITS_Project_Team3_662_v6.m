@@ -292,3 +292,40 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     xlabel('time savings (%)'); ylabel('count');
     title('predictive routing time savings distribution');
 end
+
+%Part 4: validation using Monte Carlo replications
+nVal = input('Enter # validation replications (default 100): ');
+if isempty(nVal), nVal = 100; end
+validateITS(nT, conf, muDist, sigDist, uniq, bestPD, G, T_roadcond_data, nVal);%conf undefined!
+
+function validateITS(nT, conf, mu, sigma, uniq, bestPD, G, Tcond, nVal)%conf undefined!
+   
+    % Monte Carlo validation: replications of mean %saving
+    valSave = zeros(nVal,1);
+    rng('default'); 
+    for k=1:nVal
+        rng(k);  %different seed each rep
+        [tB,tP] = runOne(nT,mu,sigma,uniq,bestPD,G,Tcond);
+        valSave(k) = mean((tB-tP)./tB*100);
+    end
+    valSave = valSave 
+    mVS = mean(valSave); sVS = std(valSave);
+    alpha = 1-conf;
+    tcrit = tinv(1-alpha/2,nVal-1);
+    err = tcrit * sVS / sqrt(nVal);
+    ci = mVS + [-1,1]*err;
+
+    fprintf('\nValidation (%d reps): mean saving=%.2f%%, CI=[%.2f%%,%.2f%%]\n', ...
+             nVal, mVS, ci);  
+
+    figure; histogram(valSave,'Normalization','pdf');
+    hold on
+    pdN = fitdist(valSave','Normal');
+    xs = linspace(min(valSave),max(valSave),200);
+    plot(xs,pdf(pdN,xs),'LineWidth',1.5);
+    title('Validation savings dist vs Normal fit');
+    legend('Empirical','Normal fit'); hold off
+
+    figure; qqplot(valSave);
+    title('QQ plot of validation %savings');
+end
