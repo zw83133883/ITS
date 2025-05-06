@@ -204,7 +204,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             spdBase(e) = random(bestPD(2).pd);
         end
     end
-    Gb.Edges.Weight = Gb.Edges.Distance ./ spdBase * mpH;
+    Gb.Edges.Weight = Gb.Edges.Distance ./ spdBase * mpH; % weight by time
     
     %Diagnostic output baseline speed draws
     figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
