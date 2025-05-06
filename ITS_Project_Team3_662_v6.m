@@ -8,12 +8,14 @@
 clear; clc; close all;
 
 % load the data sets
-load('Supporting_Data_Team_02.mat');  %this creates two primary datasets, t_speed data x4 and traffic mode
+% this creates two primary datasets, t_speed data x4 and traffic mode
+load('Supporting_Data_Team_02.mat');  
 load('EastCoast.mat');
 
 dataCell = cell(1,4);
 for i = 1:4
-  dataCell{i} = T_speed_data{:,i};%format the data in a simpler way for later
+    % format the data in a simpler way for later
+  dataCell{i} = T_speed_data{:,i};
 end
 
 % interactively inspect each series in dfittool un-comment to activate the
@@ -30,15 +32,17 @@ bestPD = struct('name',cell(1,4),'pd',cell(1,4));
 %all S## “Fits” in one 2×2 subplot
 figure('Name','All Speed Fits','NumberTitle','off');
 for i = 1:4
-    d       = dataCell{i};                    %original d = T_speed_data{:,i}
+    d       = dataCell{i};                   % original d = T_speed_data{:,i}
     pVals   = zeros(1,numel(candTypes));     % original pVals
     pdFits  = cell(1,numel(candTypes));      % original pdFits
     x_rng   = linspace(min(d),max(d),200);
     cols    = lines(numel(candTypes));
 
     subplot(2,2,i);
-     thebigoleoneoffourhistograms= histogram(d, 42, 'Normalization','pdf');%increased bin size to 42 to make it snappier
-    set(thebigoleoneoffourhistograms,'HandleVisibility','off'); %handle visibility should correct our legend issue
+    % increased bin size to 42 to make it snappier
+    thebigoleoneoffourhistograms= histogram(d, 42, 'Normalization','pdf');
+    % handle visibility should correct our legend issue
+    set(thebigoleoneoffourhistograms,'HandleVisibility','off'); 
     hold on; 
     for j = 1:numel(candTypes)
         pdFits{j} = fitdist(d,candTypes{j});           % original fit
@@ -51,12 +55,12 @@ for i = 1:4
     legend(candTypes,'Location','best','FontSize',6);
     hold off;
 
-    % store best
+    % Store best
     [~,bestIdx]      = max(pVals);
     bestPD(i).name  = candTypes{bestIdx};
     bestPD(i).pd    = pdFits{bestIdx};
     
-    %display all candidate functions parameters along with KS p‐value
+    % Display all candidate functions parameters along with KS p‐value
 fprintf('\nParameters for %s:\n', dataNames{i});
 for j = 1:numel(candTypes)
     pdj = pdFits{j};
@@ -88,15 +92,22 @@ for i = 1:4
     qqplot(d, random(bestPD(i).pd,nPts,1)); 
     title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
 
-    switch bestPD(i).name %is this part nesescary, can instead we just list all the results out in the command window and provide selection criteria
+    % is this part nesescary, can instead 
+    % we just list all the results out in the command window 
+    % and provide selection criteria
+    switch bestPD(i).name 
         case 'Normal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
+            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
+                bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Lognormal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
+            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
+                bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Gamma'
-            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', bestPD(i).pd.a, bestPD(i).pd.b);
+            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', ...
+                bestPD(i).pd.a, bestPD(i).pd.b);
         case 'Weibull'
-            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', bestPD(i).pd.A, bestPD(i).pd.B);
+            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', ...
+                bestPD(i).pd.A, bestPD(i).pd.B);
 
     end
     % % show qq plot for best candidate
@@ -199,8 +210,9 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     ylabel('pdf');
     title('Baseline speed draws (spdBase)');
 
-    %preallocate for collecting every predictive-speed draw
-    spdEffAll = zeros(numE, nT);%clear it out in case we keep re-running and muck up the memory
+    % preallocate for collecting every predictive-speed draw
+    % clear it out in case we keep re-running and muck up the memory
+    spdEffAll = zeros(numE, nT);
     tBase = zeros(nT,1);
     tPred = zeros(nT,1);
     rerouted = false(nT,1);
@@ -334,7 +346,8 @@ function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
     err = tcrit * sVS / sqrt(nVal);
     ci = mVS + [-1,1]*err;
 
-    fprintf('\nValidation (%d reps): mean saving=%.2f%%, CI=[%.2f%%,%.2f%%]\n', nVal, mVS, ci);  
+    fprintf(['\nValidation (%d reps): mean saving=%.2f%%, ' ...
+        'CI=[%.2f%%,%.2f%%]\n'], nVal, mVS, ci);  
 
     figure; histogram(valSave, 10, 'Normalization','pdf');
     hold on
