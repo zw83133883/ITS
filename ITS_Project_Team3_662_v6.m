@@ -173,9 +173,10 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
         d = trips(:,3)/100;  % convert back from hundredths of a mile
     fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
             mean(d), std(d));
-    
+
+%to prove we meet the mu and sigma target
     figure;
-    histogram(d,'Normalization','pdf');
+    histogram(d, 20,'Normalization','pdf');
     hold on;
     x = linspace(min(d),max(d),200);
     theoretical = pdf( makedist('Lognormal','mu',1,'sigma',1.6), x );
