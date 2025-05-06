@@ -10,7 +10,8 @@
 clear; clc; close all;
 
 % load the data sets
-load('Supporting_Data_Team_02.mat');  %this creates two primary datasets, t_speed data x4 and traffic mode
+% this creates two primary datasets, t_speed data x4 and traffic mode
+load('Supporting_Data_Team_02.mat');  
 load('EastCoast.mat');
 
 dataCell = cell(1,4);
@@ -58,46 +59,52 @@ for i = 1:4
     bestPD(i).pd    = pdFits{bestIdx};
     
     %display all candidate functions parameters along with KS p‐value
-fprintf('\nParameters for %s:\n', dataNames{i});
-for j = 1:numel(candTypes)
-    pdj = pdFits{j};
-    switch candTypes{j}
-      case 'Normal'
-        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
-                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
-      case 'Lognormal'
-        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
-                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
-      case 'Gamma'
-        fprintf('  %-8s  a = %.3f, b = %.3f,       KS p = %.3f\n', ...
-                candTypes{j}, pdj.a, pdj.b, pVals(j));
-      case 'Weibull'
-        fprintf('  %-8s  A = %.3f, B = %.3f,       KS p = %.3f\n', ...
-                candTypes{j}, pdj.A, pdj.B, pVals(j));
+    fprintf('\nParameters for %s:\n', dataNames{i});
+    for j = 1:numel(candTypes)
+        pdj = pdFits{j};
+        switch candTypes{j}
+          case 'Normal'
+            fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
+                    candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
+          case 'Lognormal'
+            fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
+                    candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
+          case 'Gamma'
+            fprintf('  %-8s  a = %.3f, b = %.3f,       KS p = %.3f\n', ...
+                    candTypes{j}, pdj.a, pdj.b, pVals(j));
+          case 'Weibull'
+            fprintf('  %-8s  A = %.3f, B = %.3f,       KS p = %.3f\n', ...
+                    candTypes{j}, pdj.A, pdj.B, pVals(j));
+        end
     end
-end
-fprintf('  → selected: %s\n', bestPD(i).name);
+    fprintf('  → selected: %s\n', bestPD(i).name);
 end
 
-%all QQplots in one 2×2 subplot
+% All QQplots in one 2×2 subplot
 figure('Name','All QQ Plots','NumberTitle','off');
 for i = 1:4
-    d    = dataCell{i};               % same as before
+    d    = dataCell{i};             
     nPts = numel(d);
 
     subplot(2,2,i);
     qqplot(d, random(bestPD(i).pd,nPts,1)); 
     title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
 
-    switch bestPD(i).name %is this part nesescary, can instead we just list all the results out in the command window and provide selection criteria
+    %is this part nesescary, can instead we just list all the results out 
+    % in the command window and provide selection criteria
+    switch bestPD(i).name 
         case 'Normal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
+            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
+                bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Lognormal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', bestPD(i).pd.mu, bestPD(i).pd.sigma);
+            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
+                bestPD(i).pd.mu, bestPD(i).pd.sigma);
         case 'Gamma'
-            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', bestPD(i).pd.a, bestPD(i).pd.b);
+            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', ...
+                bestPD(i).pd.a, bestPD(i).pd.b);
         case 'Weibull'
-            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', bestPD(i).pd.A, bestPD(i).pd.B);
+            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', ...
+                bestPD(i).pd.A, bestPD(i).pd.B);
 
     end
     % % show qq plot for best candidate
@@ -160,9 +167,9 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
     
-    %Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
+    % Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
 
-        d = trips(:,3)/100;  %convert back from hundredths of a mile
+    d = trips(:,3)/100;  %convert back from hundredths of a mile
     fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
             mean(d), std(d));
     
@@ -212,6 +219,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     % normal- if edge speed is 65 -> bestPD(1), if 50 -> bestPD(2)
     % accident- use bestPD(4) (S15)
     % construction- use bestPD(3) (S40)
+    rvAll = cell(nT,1); % pre-allocate cell array for all rv vectors
     
     %% actual simulation loop
     for i = 1:nT
@@ -227,6 +235,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
         Gp = G;
         ne = height(Gp.Edges);
         rv = rand(ne,1);
+        rvAll{i} = rv; % save current iteration's rv vector
         cp = cumsum(cProbs);
         spdEff = zeros(ne,1);
         for e = 1:ne
@@ -293,11 +302,35 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     histogram(savings, 10);%change bin size as needed
     xlabel('time savings (%)'); ylabel('count');
     title('predictive routing time savings distribution');
+
+    % Check the random variable road conditions 
+    allRvVals = vertcat(rvAll{:});
+    ksdensity(allRvVals);           % Estimate and plot the PDF
+    xlabel('rv value');
+    ylabel('Density');
+    title('Estimated PDF of rv values');
+    muRv = mean(allRvVals);
+    sigmaRv = std(allRvVals);
+    xRv = linspace(min(allRvVals), max(allRvVals), 100);
+    normalPdfRv = normpdf(xRv, muRv, sigmaRv);
+    hold on;
+    plot(xRv, normalPdfRv, '--r', 'LineWidth', 1.5);
+    legend('Empirical PDF', 'Normal Distribution');
+    hold off;
+    % sortedRv = sort(allRvVals);
+    % plot(sortedRv);
+    % xlabel('Index');
+    % ylabel('rv value');
+    % title('Sorted rv values (distribution shape)');
+    % histogram(allRvVals, 20); % 20 bins is just an example
+    % xlabel('Random Value');
+    % ylabel('Frequency');
+    % title('Histogram of All rv Road Conditions');
 end
 
 %% Part 4: validation using Monte Carlo replications
 nVal = input('Enter # validation replications (default 100)(Warning, this takes a while)(ctrl+c to break): ');
-if isempty(nVal), nVal = 100; end
+if isempty(nVal), nVal = 100; end 
 validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, nVal)
 
 function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
