@@ -1,4 +1,7 @@
 %% ITS Project
+%team 2
+%spring 2025
+%SYST 662
 % this script first fits candidate distributions to the speed data from T_speed_data 
 % and creates histogram, runs ks tests, and displays qq plots.
 % then it pauses and prompts for simulation parameters before calling the simulation function,
