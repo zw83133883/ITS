@@ -181,7 +181,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
 
     % to prove we meet the mu and sigma target
     figure;
-    histogram(d, 20,'Normalization','pdf');
+    histogram(d, 45,'Normalization','pdf');
     hold on;
     x = linspace(min(d),max(d),200);
     theoretical = pdf( makedist('Lognormal','mu',1,'sigma',1.6), x );
@@ -220,15 +220,19 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     tPred = zeros(nT,1);
     rerouted = false(nT,1);
     
-    %% predictive routing 
+    %% predictive routing       
     allCond = [];
     for col = 1:width(T_roadcond_data)
         allCond = [allCond; T_roadcond_data{:,col}];
     end
-    condStr = string(allCond);
-    pNorm = sum(condStr=="Normal") / numel(condStr);
-    pAcc  = sum(condStr=="Accident") / numel(condStr);
-    pCons = sum(condStr=="Construction") / numel(condStr);
+
+    %kill case sensitivity!!
+    condStr = lower(string(allCond));
+
+    %pull data for each type
+    pNorm = sum(condStr=="normal")/ numel(condStr);
+    pAcc  = sum(condStr=="accident")/ numel(condStr);
+    pCons = sum(condStr=="construction")/ numel(condStr);
     if pNorm==0 && pAcc==0 && pCons==0
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
         
