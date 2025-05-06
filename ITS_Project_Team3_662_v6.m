@@ -405,8 +405,8 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
     for col = 1:width(Tcond)
         allC = [allC; Tcond{:,col}];
     end
-    condStr = lower(string(allCond));
-    
+    condStr = lower(string(allC));
+
     pNorm = sum(condStr=="normal")/ numel(allC);
     pAcc  = sum(condStr=="accident")/ numel(allC);
     pCons = sum(condStr=="construction")/ numel(allC);
