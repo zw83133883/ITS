@@ -1,10 +1,12 @@
-%% ITS Project
-% this script first fits candidate distributions to the speed data from T_speed_data 
-% and creates histogram, runs ks tests, and displays qq plots.
-% then it pauses and prompts for simulation parameters before calling the simulation function,
-% which uses the best-fit distributions to simulate baseline vs predictive routing.
+%% ITS Project TEAM 3 
+%SYST 662
+%Spring 2025
+%this script first fits candidate distributions to the speed data from T_speed_data 
+%and creates histogram, runs ks tests, and displays qq plots.
+%then it pauses and prompts for simulation parameters before calling the simulation function,
+%which uses the best-fit distributions to simulate baseline vs predictive routing.
 %
-% part 1: distribution selection
+%part 1: distribution selection
 clear; clc; close all;
 
 % load the data sets
@@ -160,7 +162,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     
     %Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
 
-        d = trips(:,3)/100;  % convert back from hundredths of a mile
+        d = trips(:,3)/100;  %convert back from hundredths of a mile
     fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
             mean(d), std(d));
     
@@ -293,30 +295,29 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     title('predictive routing time savings distribution');
 end
 
-%Part 4: validation using Monte Carlo replications
-nVal = input('Enter # validation replications (default 100): ');
+%% Part 4: validation using Monte Carlo replications
+nVal = input('Enter # validation replications (default 100)(Warning, this takes a while)(ctrl+c to break): ');
 if isempty(nVal), nVal = 100; end
-validateITS(nT, conf, muDist, sigDist, uniq, bestPD, G, T_roadcond_data, nVal);%conf undefined!
+validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, nVal)
 
-function validateITS(nT, conf, mu, sigma, uniq, bestPD, G, Tcond, nVal)%conf undefined!
-   
+function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
+    
     % Monte Carlo validation: replications of mean %saving
     valSave = zeros(nVal,1);
     rng('default'); 
     for k=1:nVal
         rng(k);  %different seed each rep
-        [tB,tP] = runOne(nT,mu,sigma,uniq,bestPD,G,Tcond);
+        [tB,tP] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond);
         valSave(k) = mean((tB-tP)./tB*100);
     end
     valSave = valSave 
     mVS = mean(valSave); sVS = std(valSave);
-    alpha = 1-conf;
+    alpha = 1 - confLev;
     tcrit = tinv(1-alpha/2,nVal-1);
     err = tcrit * sVS / sqrt(nVal);
     ci = mVS + [-1,1]*err;
 
-    fprintf('\nValidation (%d reps): mean saving=%.2f%%, CI=[%.2f%%,%.2f%%]\n', ...
-             nVal, mVS, ci);  
+    fprintf('\nValidation (%d reps): mean saving=%.2f%%, CI=[%.2f%%,%.2f%%]\n', nVal, mVS, ci);  
 
     figure; histogram(valSave,'Normalization','pdf');
     hold on
@@ -328,4 +329,83 @@ function validateITS(nT, conf, mu, sigma, uniq, bestPD, G, Tcond, nVal)%conf und
 
     figure; qqplot(valSave);
     title('QQ plot of validation %savings');
+end
+
+function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
+    % exactly the same sampling + routing loops as in simulateITS,
+    % but returns tBase/tPred vectors instead of plotting.
+
+    mpH = 60;
+    delete(gcp('nocreate'));
+    parpool('local',6);
+
+    % generate trips
+    trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
+
+    % build baseline graph
+    Gb = G;
+    E  = height(Gb.Edges);
+    for e = 1:E
+        if Gb.Edges.Speed(e) == 65
+            pd = bestPD(1).pd;
+        else
+            pd = bestPD(2).pd;
+        end
+        Gb.Edges.Weight(e) = Gb.Edges.Distance(e)/random(pd)*mpH;
+    end
+
+    tBase = nan(nT,1);
+    tPred = nan(nT,1);
+
+    %condition probabilities
+    allC = [];
+    for col = 1:width(Tcond)
+        allC = [allC; Tcond{:,col}];
+    end
+    pNorm = sum(allC=="normal") / numel(allC);
+    pAcc = sum(allC=="accident")/ numel(allC);
+    pCons = sum(allC=="construction")/ numel(allC);
+    if pNorm+ pAcc+ pCons == 0
+        pNorm=0.9; pAcc=0.05; pCons=0.05;
+    end
+    cp = cumsum([pNorm,pAcc,pCons]);
+
+    %loop over trips
+    for i = 1:nT
+        [~, tB] = shortestpath(Gb, trips(i,1), trips(i,2), 'Method','positive');
+        tBase(i) = tB;
+
+        %build predictive graph
+        Gp = G;
+        rv = rand(E,1);
+    for e = 1:E
+        rv_e = rv(e);
+        
+        if rv_e <= cp(1)
+            % first branch: pick nominal distribution based on speed
+            if Gp.Edges.Speed(e) == 65
+                pd = bestPD(1).pd;
+            else
+                pd = bestPD(2).pd;
+            end
+
+        elseif rv_e <= cp(2)
+            % second branch: accident distribution
+            pd = bestPD(4).pd;
+
+        else
+            % third branch: construction distribution
+            pd = bestPD(3).pd;
+        end
+
+        Gp.Edges.Weight(e) = Gp.Edges.Distance(e) / random(pd) * mpH;
+    end
+        [~, tP] = shortestpath(Gp, trips(i,1), trips(i,2), 'Method','positive');
+        tPred(i) = tP;
+    end
+
+    %keep only the valid (non-NaN) runs
+    ok = ~isnan(tBase) & ~isnan(tPred);
+    tBase = tBase(ok);
+    tPred = tPred(ok);
 end
