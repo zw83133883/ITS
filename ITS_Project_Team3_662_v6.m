@@ -24,11 +24,6 @@ end
 % interactively inspect each series in dfittool un-comment to activate the
 % pop-up
 dataNames = {'S65','S50','S40','S15'};
-% % for i = 1:4
-% %     fprintf('Launching dfittool for %s – close window when done\n', dataNames{i});
-% %     dfittool(T_speed_data{:,i});
-% % end
-
 candTypes = {'Normal','Lognormal','Gamma','Weibull'};
 bestPD = struct('name',cell(1,4),'pd',cell(1,4));
 
@@ -234,8 +229,10 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     pAcc  = sum(condStr=="accident")/ numel(condStr);
     pCons = sum(condStr=="construction")/ numel(condStr);
     if pNorm==0 && pAcc==0 && pCons==0
+        %Diagnostic - tell user if the data isnt matching
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
-        
+                fprintf('*** Diagnostic: no road-condition labels matched, using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n', ...
+                 pNorm, pAcc, pCons);
     end
     cProbs = [pNorm, pAcc, pCons];
 
@@ -292,7 +289,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             rerouted(i) = true;
         end
     end
-     % Diagnostic- show predictive-speed draws
+    % Diagnostic- show predictive-speed draws
     subplot(2,1,2);
     histogram(spdEffAll(:),'Normalization','pdf');
     xlabel('speed (mph)');
@@ -327,9 +324,17 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     fprintf('fraction rerouted: %.2f%%\n', fracRer*100);
     
     figure;
-    histogram(savings, 10);%change bin size here as needed
+    histogram(savings, 10);% change bin size here as needed
     xlabel('time savings (%)'); ylabel('count');
     title('predictive routing time savings distribution');
+
+    % plot the road condition data
+    figure;
+    road_data = categorical(T_roadcond_data{:,1});
+    histogram(road_data)
+    title('Road Condition Distribution')
+    xlabel('Condition')
+    ylabel('Frequency')
 end
 
 %% Part 4: validation using Monte Carlo replications
@@ -400,9 +405,9 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
     for col = 1:width(Tcond)
         allC = [allC; Tcond{:,col}];
     end
-    pNorm = sum(allC=="Normal")/ numel(allC);
-    pAcc  = sum(allC=="Accident")/ numel(allC);
-    pCons = sum(allC=="Construction")/ numel(allC);
+    pNorm = sum(allC=="normal")/ numel(allC);
+    pAcc  = sum(allC=="accident")/ numel(allC);
+    pCons = sum(allC=="construction")/ numel(allC);
     if pNorm + pAcc + pCons == 0
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
         fprintf(['*** Diagnostic: no road-condition labels matched, ' ...
