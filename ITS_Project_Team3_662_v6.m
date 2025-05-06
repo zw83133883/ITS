@@ -161,9 +161,15 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     mpH = 60;  % minutes per hour
     
     %% parallel pool
-    delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
-    parpool('local',6);%change this to whatever your computer and license will allow
-    
+    %%%delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
+    %%%parpool('local',6);%change this to whatever your computer and license will allow
+    c = parcluster('local');
+    c.NumWorkers = 12; %Increase its maximum workers to 12     
+    c.saveProfile; %lock it in    
+    %Restart any existing pool for reliability 
+    %start a new one with 12 workers
+    delete(gcp('nocreate'));
+    parpool(c, 12);
     
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
