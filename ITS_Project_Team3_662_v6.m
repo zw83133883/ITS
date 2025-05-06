@@ -181,7 +181,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
 
     % to prove we meet the mu and sigma target
     figure;
-    histogram(d, 20,'Normalization','pdf');
+    histogram(d, 45,'Normalization','pdf');
     hold on;
     x = linspace(min(d),max(d),200);
     theoretical = pdf( makedist('Lognormal','mu',1,'sigma',1.6), x );
