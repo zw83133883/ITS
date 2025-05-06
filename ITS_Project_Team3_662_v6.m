@@ -29,7 +29,7 @@ dataNames = {'S65','S50','S40','S15'};
 candTypes = {'Normal','Lognormal','Gamma','Weibull'};
 bestPD = struct('name',cell(1,4),'pd',cell(1,4));
 
-%all S## “Fits” in one 2×2 subplot
+% all S## “Fits” in one 2×2 subplot
 figure('Name','All Speed Fits','NumberTitle','off');
 for i = 1:4
     d       = dataCell{i};                   % original d = T_speed_data{:,i}
@@ -170,13 +170,13 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
     
-    %Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
+    % Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
 
         d = trips(:,3)/100;  % convert back from hundredths of a mile
     fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
             mean(d), std(d));
 
-    %to prove we meet the mu and sigma target
+    % to prove we meet the mu and sigma target
     figure;
     histogram(d, 20,'Normalization','pdf');
     hold on;
@@ -270,7 +270,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             end
         end
 
-        spdEffAll(:,i) = spdEff;%collect diagnostic data
+        spdEffAll(:,i) = spdEff;% collect diagnostic data
         Gp.Edges.Weight = Gp.Edges.Distance./spdEff*mpH;
         
         [pP, tP] = shortestpath(Gp, sn, en, 'Method','positive');%from word doc
@@ -284,7 +284,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             rerouted(i) = true;
         end
     end
-     %Diagnostic- show predictive-speed draws
+     % Diagnostic- show predictive-speed draws
     subplot(2,1,2);
     histogram(spdEffAll(:),'Normalization','pdf');
     xlabel('speed (mph)');
@@ -306,7 +306,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     ciLo = mSave - err;
     ciHi = mSave + err;
     
-    %display results
+    % display results
     fprintf('\npredictive routing savings:\n');
     fprintf('mean: %.2f%%, 95%% ci: [%.2f%%, %.2f%%]\n', mSave, ciLo, ciHi);
     if ciLo > 5
@@ -335,11 +335,10 @@ function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
     valSave = zeros(nVal,1);
     rng('default'); 
     for k=1:nVal
-        rng(k);  %different seed each rep
+        rng(k);  % different seed each rep
         [tB,tP] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond);
         valSave(k) = mean((tB-tP)./tB*100);
     end
-    valSave = valSave 
     mVS = mean(valSave); sVS = std(valSave);
     alpha = 1 - confLev;
     tcrit = tinv(1-alpha/2,nVal-1);
@@ -360,8 +359,8 @@ function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
     figure; qqplot(valSave);
     title('QQ plot of validation %savings');
 
-    %diag plot of cumulative mean to see stability of montecarlo section
-    %code
+    % diag plot of cumulative mean to see stability of montecarlo section
+    % code
     cumMean = cumsum(valSave) ./ (1:nVal)';
     figure;
     plot(1:nVal, cumMean, 'LineWidth',1.5);
@@ -370,8 +369,8 @@ function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
     title('Convergence of Monte Carlo estimate');
     yline(cumMean(end),'r--','Final mean');
 
-%plot CI for the montecarlo for diagnostic of the montecarlo code by
-%sensitivity
+    % plot CI for the montecarlo for diagnostic of the montecarlo code by
+    % sensitivity
     ciWidth = 2 * tinv(1 - (1-confLev)/2, (1:nVal)'-1) .* ...
           arrayfun(@(k) std(valSave(1:k)),1:nVal) ./ sqrt(1:nVal)';
     figure;
@@ -385,10 +384,10 @@ end
 function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
     mpH = 60;
 
-    %generate the same trips as in simulateITS
+    % generate the same trips as in simulateITS
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
 
-    %probabilities
+    % probabilities
     allC = [];
     for col = 1:width(Tcond)
         allC = [allC; Tcond{:,col}];
@@ -398,11 +397,14 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
     pCons = sum(allC=="construction")/ numel(allC);
     if pNorm + pAcc + pCons == 0
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
+        fprintf(['*** Diagnostic: no road-condition labels matched, ' ...
+            'using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n'], ...
+                 pNorm, pAcc, pCons);
     end
     cp = cumsum([pNorm, pAcc, pCons]);
 
     E = height(G.Edges);
-    %draw one - mixture of speeds for every edge
+    % draw one - mixture of speeds for every edge
     rv     = rand(E,1);
     spdEff = zeros(E,1);
     for e = 1:E
@@ -414,17 +416,17 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
                 pd = bestPD(2).pd;
             end
         elseif rv(e) <= cp(2)
-            %accident
+            % accident
             pd = bestPD(4).pd;
         else
-            %construction
+            % construction
             pd = bestPD(3).pd;
         end
         spdEff(e) = random(pd);
     end
 
-    %baseline route and time under spdEff
-    %first, we pick the baseline path by nominal speeds
+    % baseline route and time under spdEff
+    % first, we pick the baseline path by nominal speeds
     Gb = G;
     spdNom = zeros(E,1);
     for e = 1:E
@@ -433,11 +435,11 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
         else
             nomPD = bestPD(2).pd;
         end
-        spdNom(e) = mean(nomPD); %average of the nominal fit
+        spdNom(e) = mean(nomPD); % average of the nominal fit
     end
     Gb.Edges.Weight = Gb.Edges.Distance ./ spdNom * mpH;
     
-    %compute tBase per trip
+    % compute tBase per trip
     tBase = nan(nT,1);
     for i = 1:nT
         sn = trips(i,1);
@@ -450,7 +452,7 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
         end
     end
     
-    %predictive route and time under the spdEff
+    % predictive route and time under the spdEff
     Gp = G;
     Gp.Edges.Weight = G.Edges.Distance ./ spdEff * mpH;
     
@@ -467,7 +469,7 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
         end
     end
 
-    %drop NaNs
+    % drop NaNs
     ok = ~isnan(tBase) & ~isnan(tPred);
     tBase  = tBase(ok);
     tPred  = tPred(ok);
