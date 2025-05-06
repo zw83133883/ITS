@@ -234,7 +234,10 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     pAcc  = sum(condStr=="accident")/ numel(condStr);
     pCons = sum(condStr=="construction")/ numel(condStr);
     if pNorm==0 && pAcc==0 && pCons==0
+        %Diagnostic - tell user if the data isnt matching
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
+                fprintf('*** Diagnostic: no road-condition labels matched, using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n', ...
+                 pNorm, pAcc, pCons);
     end
     cProbs = [pNorm, pAcc, pCons];
 
