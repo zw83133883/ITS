@@ -405,9 +405,11 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
     for col = 1:width(Tcond)
         allC = [allC; Tcond{:,col}];
     end
-    pNorm = sum(allC=="normal")/ numel(allC);
-    pAcc  = sum(allC=="accident")/ numel(allC);
-    pCons = sum(allC=="construction")/ numel(allC);
+    condStr = lower(string(allCond));
+    
+    pNorm = sum(condStr=="normal")/ numel(allC);
+    pAcc  = sum(condStr=="accident")/ numel(allC);
+    pCons = sum(condStr=="construction")/ numel(allC);
     if pNorm + pAcc + pCons == 0
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
         fprintf(['*** Diagnostic: no road-condition labels matched, ' ...
