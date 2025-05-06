@@ -27,7 +27,7 @@ end
 
 % interactively inspect each series in dfittool un-comment to activate the
 % pop-up
-% % % % dataNames = {'S65','S50','S40','S15'};
+dataNames = {'S65','S50','S40','S15'};
 % % % % for i = 1:4
 % % % %     fprintf('Launching dfittool for %s – close window when done\n', dataNames{i});
 % % % %     dfittool(T_speed_data{:,i});
