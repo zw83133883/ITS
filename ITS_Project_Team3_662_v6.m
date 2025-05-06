@@ -226,11 +226,12 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
         allCond = [allCond; T_roadcond_data{:,col}];
     end
     condStr = string(allCond);
-    pNorm = sum(condStr=="normal") / numel(condStr);
-    pAcc  = sum(condStr=="accident") / numel(condStr);
-    pCons = sum(condStr=="construction") / numel(condStr);
+    pNorm = sum(condStr=="Normal") / numel(condStr);
+    pAcc  = sum(condStr=="Accident") / numel(condStr);
+    pCons = sum(condStr=="Construction") / numel(condStr);
     if pNorm==0 && pAcc==0 && pCons==0
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
+        
     end
     cProbs = [pNorm, pAcc, pCons];
 
@@ -395,9 +396,9 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
     for col = 1:width(Tcond)
         allC = [allC; Tcond{:,col}];
     end
-    pNorm = sum(allC=="normal")/ numel(allC);
-    pAcc  = sum(allC=="accident")/ numel(allC);
-    pCons = sum(allC=="construction")/ numel(allC);
+    pNorm = sum(allC=="Normal")/ numel(allC);
+    pAcc  = sum(allC=="Accident")/ numel(allC);
+    pCons = sum(allC=="Construction")/ numel(allC);
     if pNorm + pAcc + pCons == 0
         pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
         fprintf(['*** Diagnostic: no road-condition labels matched, ' ...
