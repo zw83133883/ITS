@@ -290,7 +290,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     fprintf('fraction rerouted: %.2f%%\n', fracRer*100);
     
     figure;
-    histogram(savings);
+    histogram(savings, 10);%change bin size as needed
     xlabel('time savings (%)'); ylabel('count');
     title('predictive routing time savings distribution');
 end
@@ -319,9 +319,9 @@ function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
 
     fprintf('\nValidation (%d reps): mean saving=%.2f%%, CI=[%.2f%%,%.2f%%]\n', nVal, mVS, ci);  
 
-    figure; histogram(valSave,'Normalization','pdf');
+    figure; histogram(valSave, 10, 'Normalization','pdf');
     hold on
-    pdN = fitdist(valSave','Normal');
+    pdN = fitdist(valSave,'Normal');
     xs = linspace(min(valSave),max(valSave),200);
     plot(xs,pdf(pdN,xs),'LineWidth',1.5);
     title('Validation savings dist vs Normal fit');
