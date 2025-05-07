@@ -140,8 +140,8 @@ sigma = input('Enter lognormal sigma for trip distances (default = 1.6): ');
 if isempty(sigma), sigma = 1.6; end
 
 % Prompt for oversampling parameter
-uniq = input('Enter oversample parameter for genlogntrips [1–20, default = 1]: ');
-if isempty(uniq), uniq = 1; end
+uniq = input('Enter oversample parameter for genlogntrips [1–20, default = 20]: ');
+if isempty(uniq), uniq = 20; end % default 20 ~87% unique
 if uniq < 1 || uniq > 20
     error('Oversample parameter must be between 1 and 20.');
 end
@@ -169,7 +169,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %Restart any existing pool for reliability 
     %start a new one with 12 workers
     delete(gcp('nocreate'));
-    parpool(c, 12);
+    parpool(c, 4);
     
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
