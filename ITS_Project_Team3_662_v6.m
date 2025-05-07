@@ -195,16 +195,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %% nominal routing
     Gb = G;  % baseline graph
     numE = height(Gb.Edges);
-    spdBase = zeros(numE,1);
-
-    for e = 1:numE
-        if Gb.Edges.Speed(e) == 65
-            spdBase(e) = random(bestPD(1).pd);
-        else
-            spdBase(e) = random(bestPD(2).pd);
-        end
-    end
-    Gb.Edges.Weight = Gb.Edges.Distance ./ spdBase * mpH; % weight by time
+    Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
     
     %Diagnostic output baseline speed draws
     figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
