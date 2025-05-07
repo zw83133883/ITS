@@ -146,6 +146,53 @@ if uniq < 1 || uniq > 20
     error('Oversample parameter must be between 1 and 20.');
 end
 
+allCond = [];
+for col = 1:width(T_roadcond_data)
+    allCond = [allCond; T_roadcond_data{:,col}];
+end
+
+%kill case sensitivity!!
+condStr = lower(string(allCond));
+
+%pull data for each type
+pNorm = sum(condStr=="normal")/ numel(condStr);
+pAcc  = sum(condStr=="accident")/ numel(condStr);
+pCons = sum(condStr=="construction")/ numel(condStr);
+if pNorm==0 && pAcc==0 && pCons==0
+    %Diagnostic - tell user if the data isnt matching
+    pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
+            fprintf('*** Diagnostic: no road-condition labels matched, using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n', ...
+             pNorm, pAcc, pCons);
+end
+cProbs = [pNorm, pAcc, pCons];
+mpH = 60;  % minutes per hour
+Gp = G;
+ne = height(Gp.Edges);
+rv = rand(ne,1);
+cp = cumsum(cProbs);
+spdEff = zeros(ne,1);
+for e = 1:ne
+    % find nominal distribution based on edge speed
+    if Gp.Edges.Speed(e)==65
+        nomPD = bestPD(1).pd;
+    else
+        nomPD = bestPD(2).pd;
+    end
+    if rv(e) <= cp(1)
+        % normal- use nominal distribution
+        spdEff(e) = random(nomPD);
+    elseif rv(e) <= cp(2)
+        % accident use S15 distribution
+        spdEff(e) = random(bestPD(4).pd);
+    else
+        % construction- use S40 distribution
+        spdEff(e) = random(bestPD(3).pd);
+    end
+end
+
+spdEffAll(:,i) = spdEff; % collect diagnostic data
+Gp.Edges.Weight = Gp.Edges.Distance ./ spdEff * mpH; % weight of 
+
 simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
 
 
@@ -158,13 +205,11 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %   bestPD(3): best fit for S40 (construction conditions)
     %   bestPD(4): best fit for S15 (accident conditions)
     
-    mpH = 60;  % minutes per hour
-    
     %% parallel pool
     %%%delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
     %%%parpool('local',6);%change this to whatever your computer and license will allow
     c = parcluster('local');
-    c.NumWorkers = 12; %Increase its maximum workers to 12     
+    c.NumWorkers = 4; %Increase its maximum workers to 12     
     c.saveProfile; %lock it in    
     %Restart any existing pool for reliability 
     %start a new one with 12 workers
@@ -193,6 +238,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     title('Trip‐lengths: empirical vs. LogNormal(\mu=1,\sigma=1.6)');
     legend('Empirical','Theoretical');
     %% nominal routing
+    mpH = 60;  % minutes per hour
     Gb = G;  % baseline graph
     numE = height(Gb.Edges);
     Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
@@ -213,30 +259,13 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     rerouted = false(nT,1);
     
     %% predictive routing       
-    allCond = [];
-    for col = 1:width(T_roadcond_data)
-        allCond = [allCond; T_roadcond_data{:,col}];
-    end
-
-    %kill case sensitivity!!
-    condStr = lower(string(allCond));
-
-    %pull data for each type
-    pNorm = sum(condStr=="normal")/ numel(condStr);
-    pAcc  = sum(condStr=="accident")/ numel(condStr);
-    pCons = sum(condStr=="construction")/ numel(condStr);
-    if pNorm==0 && pAcc==0 && pCons==0
-        %Diagnostic - tell user if the data isnt matching
-        pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
-                fprintf('*** Diagnostic: no road-condition labels matched, using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n', ...
-                 pNorm, pAcc, pCons);
-    end
-    cProbs = [pNorm, pAcc, pCons];
 
     % normal- if edge speed is 65 -> bestPD(1), if 50 -> bestPD(2)
     % accident- use bestPD(4) (S15)
     % construction- use bestPD(3) (S40)
-    
+    ne = height(G.Edges);
+    nScenarios = 10;
+    spdEffScenarios = zeros(ne, nScenarios);
     %% actual simulation loop
     for i = 1:nT
         sn = trips(i,1);  
@@ -247,33 +276,13 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             continue;
         end
         tBase(i) = tB;
+      
+        scenarioIdx = randi(nScenarios);
+        spdEff = spdEffScenarios(:, scenarioIdx);
         
+        % Set weights using selected scenario
         Gp = G;
-        ne = height(Gp.Edges);
-        rv = rand(ne,1);
-        cp = cumsum(cProbs);
-        spdEff = zeros(ne,1);
-        for e = 1:ne
-            % find nominal distribution based on edge speed
-            if Gp.Edges.Speed(e)==65
-                nomPD = bestPD(1).pd;
-            else
-                nomPD = bestPD(2).pd;
-            end
-            if rv(e) <= cp(1)
-                % normal- use nominal distribution
-                spdEff(e) = random(nomPD);
-            elseif rv(e) <= cp(2)
-                % accident use S15 distribution
-                spdEff(e) = random(bestPD(4).pd);
-            else
-                % construction- use S40 distribution
-                spdEff(e) = random(bestPD(3).pd);
-            end
-        end
-
-        spdEffAll(:,i) = spdEff; % collect diagnostic data
-        Gp.Edges.Weight = Gp.Edges.Distance ./ spdEff * mpH; % weight of 
+        Gp.Edges.Weight = G.Edges.Distance ./ spdEff * mpH;
         
         [pP, tP] = shortestpath(Gp, sn, en, 'Method','positive');%from word doc
         if isempty(pP)
