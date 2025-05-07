@@ -193,11 +193,11 @@ end
 spdEffAll(:,i) = spdEff; % collect diagnostic data
 Gp.Edges.Weight = Gp.Edges.Distance ./ spdEff * mpH; % weight of 
 
-simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
+simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, Gp);
 
 
 %% simulate ITS
-function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
+function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, Gp)
     % this function runs the routing simulation using the best fit speed distributions
     % bestPD is a structure array with fields:
     %   bestPD(1): best fit for S65 (nominal interstate speeds)
@@ -241,9 +241,9 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     mpH = 60;  % minutes per hour
     Gb = G;  % baseline graph
     numE = height(Gb.Edges);
-    Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
+    % Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
     
-    %Diagnostic output baseline speed draws
+    % Diagnostic output baseline speed draws
     figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
     subplot(2,1,1);
     histogram(Gb.Edges.Speed,'Normalization','pdf');
@@ -264,8 +264,8 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     % accident- use bestPD(4) (S15)
     % construction- use bestPD(3) (S40)
     ne = height(G.Edges);
-    nScenarios = 10;
-    spdEffScenarios = zeros(ne, nScenarios);
+    % nScenarios = 10;
+    % spdEffScenarios = zeros(ne, nScenarios);
     %% actual simulation loop
     for i = 1:nT
         sn = trips(i,1);  
@@ -276,13 +276,6 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             continue;
         end
         tBase(i) = tB;
-      
-        scenarioIdx = randi(nScenarios);
-        spdEff = spdEffScenarios(:, scenarioIdx);
-        
-        % Set weights using selected scenario
-        Gp = G;
-        Gp.Edges.Weight = G.Edges.Distance ./ spdEff * mpH;
         
         [pP, tP] = shortestpath(Gp, sn, en, 'Method','positive');%from word doc
         if isempty(pP)
@@ -401,7 +394,7 @@ function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
 end
 
 function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
-    mpH = 60;
+    time_factor = 60; % hours to minutes
 
     % generate the same trips as in simulateITS
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
@@ -458,7 +451,7 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
         end
         spdNom(e) = mean(nomPD); % average of the nominal fit
     end
-    Gb.Edges.Weight = Gb.Edges.Distance ./ spdNom * mpH;
+    Gb.Edges.Weight = Gb.Edges.Distance ./ spdNom * time_factor;
     
     % compute tBase per trip
     tBase = nan(nT,1);
@@ -469,13 +462,13 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
         if isempty(pB)
             tBase(i) = NaN;
         else
-            tBase(i) = sum(G.Edges.Distance(pB)./spdEff(pB)) * mpH;
+            tBase(i) = sum(Gb.Edges.Distance(pB)./Gb.Edges.Speed(pB)) * time_factor;
         end
     end
     
     % predictive route and time under the spdEff
     Gp = G;
-    Gp.Edges.Weight = G.Edges.Distance ./ spdEff * mpH;
+    Gp.Edges.Weight = G.Edges.Distance ./ spdEff * time_factor;
     
     % compute tPred per trip
     tPred = nan(nT,1);
@@ -486,7 +479,7 @@ function [tBase, tPred] = runOne(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond)
         if isempty(pP)
             tPred(i) = NaN;
         else
-            tPred(i) = sum(G.Edges.Distance(pP)./spdEff(pP)) * mpH;
+            tPred(i) = sum(Gp.Edges.Distance(pP)./spdEff(pP)) * time_factor;
         end
     end
 
