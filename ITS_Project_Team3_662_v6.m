@@ -243,13 +243,15 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, G
     numE = height(Gb.Edges);
     % Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
     
-    % Diagnostic output baseline speed draws
+    % Diagnostic output baseline 
+    xlimrange = [0, 100]
     figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
     subplot(2,1,1);
     histogram(Gb.Edges.Speed,'Normalization','pdf');
     xlabel('speed (mph)');
     ylabel('pdf');
     title('Baseline speed draws (spdBase)');
+    xlim(xlimrange)
 
     % preallocate for collecting every predictive-speed draw
     % clear it out in case we keep re-running and muck up the memory
@@ -294,6 +296,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, G
     xlabel('speed (mph)');
     ylabel('pdf');
     title('Predictive speed draws (all spdEff)');
+    xlim(xlimrange)
     %% compile results
     valid = ~isnan(tBase) & ~isnan(tPred);
     tBase = tBase(valid);
