@@ -200,7 +200,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %Diagnostic output baseline speed draws
     figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
     subplot(2,1,1);
-    histogram(spdBase,'Normalization','pdf');
+    histogram(Gb.Edges.Speed,'Normalization','pdf');
     xlabel('speed (mph)');
     ylabel('pdf');
     title('Baseline speed draws (spdBase)');
@@ -272,8 +272,8 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
             end
         end
 
-        spdEffAll(:,i) = spdEff;% collect diagnostic data
-        Gp.Edges.Weight = Gp.Edges.Distance./spdEff*mpH;
+        spdEffAll(:,i) = spdEff; % collect diagnostic data
+        Gp.Edges.Weight = Gp.Edges.Distance ./ spdEff * mpH; % weight of 
         
         [pP, tP] = shortestpath(Gp, sn, en, 'Method','positive');%from word doc
         if isempty(pP)
