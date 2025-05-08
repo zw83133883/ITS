@@ -309,9 +309,9 @@ title('Baseline speed draws from fitted distributions');
     end
     % Diagnostic- show predictive-speed draws
     tiledlayout(3,1);
-    nexttile; histogram(Gb.Edges.Speed,'Normalization','pdf'); …
-    nexttile; histogram(spdEffAll(:),'Normalization','pdf'); …
-    nexttile; histogram(spdBaseAll(:),'Normalization','pdf'); …
+    nexttile; histogram(Gb.Edges.Speed,'Normalization','pdf'); 
+    nexttile; histogram(spdEffAll(:),'Normalization','pdf'); 
+    nexttile; histogram(spdBaseAll(:),'Normalization','pdf'); 
     xlabel('speed (mph)');
     ylabel('pdf');
     title('Predictive speed draws (all spdEff)');
