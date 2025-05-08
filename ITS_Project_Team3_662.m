@@ -192,16 +192,6 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     numE = height(Gb.Edges);
     % Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
     
-    % Diagnostic output baseline 
-    xlimrange = [0, 100];
-    figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
-    subplot(2,1,1);
-    histogram(Gb.Edges.Speed,'Normalization','pdf');
-    xlabel('speed (mph)');
-    ylabel('pdf');
-    title('Baseline speed draws (spdBase)');
-    xlim(xlimrange);
-
     %diagnostic basline speed spread
     spdBaseAll = zeros(numE,nT);
     for run=1:nT
