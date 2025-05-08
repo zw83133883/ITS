@@ -213,17 +213,7 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
         spdBaseAll(e,run) = random(nomPD);
       end
     end
-    figure; histogram(spdBaseAll(:),'Normalization','pdf');
-    xlabel('baseline speed (mph)');
-    ylabel('pdf');
-    title('Baseline speed draws from fitted distributions');
-
-% then
-figure; histogram(spdBaseAll(:),'Normalization','pdf');
-xlabel('baseline speed (mph)');
-ylabel('pdf');
-title('Baseline speed draws from fitted distributions');
-
+    
     % preallocate for collecting every predictive-speed draw
     % clear it out in case we keep re-running and muck up the memory
     spdEffAll = zeros(numE, nT);
@@ -308,14 +298,34 @@ title('Baseline speed draws from fitted distributions');
         end
     end
     % Diagnostic- show predictive-speed draws
-    tiledlayout(3,1);
-    nexttile; histogram(Gb.Edges.Speed,'Normalization','pdf'); 
-    nexttile; histogram(spdEffAll(:),'Normalization','pdf'); 
-    nexttile; histogram(spdBaseAll(:),'Normalization','pdf'); 
-    xlabel('speed (mph)');
-    ylabel('pdf');
-    title('Predictive speed draws (all spdEff)');
-    xlim(xlimrange)
+        xlimrange = [0, 100];
+    figure('Name','Speed Draws Comparison','NumberTitle','off');
+    tiledlayout(3,1,'Padding','compact','TileSpacing','compact');
+    
+    %raw nominal edge speeds
+    ax1 = nexttile;
+    histogram(Gb.Edges.Speed,'Normalization','pdf');
+    title(ax1,'Raw Edge Speeds (Gb.Edges.Speed)');
+    xlabel(ax1,'Speed (mph)');
+    ylabel(ax1,'PDF');
+    xlim(ax1,xlimrange);
+    
+    %baseline draws from fitted distributions
+    ax2 = nexttile;
+    histogram(spdBaseAll(:),'Normalization','pdf');
+    title(ax2,'Baseline Speed Draws');
+    xlabel(ax2,'Speed (mph)');
+    ylabel(ax2,'PDF');
+    xlim(ax2,xlimrange);
+    
+    %predictive draws (accidents/construction mixture)
+    ax3 = nexttile;
+    histogram(spdEffAll(:),'Normalization','pdf');
+    title(ax3,'Predictive Speed Draws');
+    xlabel(ax3,'Speed (mph)');
+    ylabel(ax3,'PDF');
+    xlim(ax3,xlimrange);
+    
     %% compile results
     valid = ~isnan(tBase) & ~isnan(tPred);
     tBase = tBase(valid);
