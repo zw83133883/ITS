@@ -15,104 +15,86 @@ clear; clc; close all;
 load('Supporting_Data_Team_02.mat');  
 load('EastCoast.mat');
 
-dataCell = cell(1,4);
-for i = 1:4
-    % format the data in a simpler way for later
-  dataCell{i} = T_speed_data{:,i};
+dataNames = {'S65','S50','S40','S15'}; %titles
+candTypes = {'Normal','Lognormal','Gamma','Weibull'}; %data under comparison
+dataCell  = cell(1,4); %holds the speed data
+for i=1:4
+    dataCell{i} = T_speed_data{:,i};
 end
 
-% interactively inspect each series in dfittool un-comment to activate the
-% pop-up
-dataNames = {'S65','S50','S40','S15'};
-candTypes = {'Normal','Lognormal','Gamma','Weibull'};
-bestPD = struct('name',cell(1,4),'pd',cell(1,4));
+%store the KS‐best and LL‐best fits
+bestPD_KS = struct('name',cell(1,4),'pd',cell(1,4));
+bestPD_LL = struct('name',cell(1,4),'pd',cell(1,4));
 
-% all S## “Fits” in one 2×2 subplot
+% plot all four histograms + fits in one figure
 figure('Name','All Speed Fits','NumberTitle','off');
 for i = 1:4
-    d       = dataCell{i};                   % original d = T_speed_data{:,i}
-    pVals   = zeros(1,numel(candTypes));     % original pVals
-    pdFits  = cell(1,numel(candTypes));      % original pdFits
-    x_rng   = linspace(min(d),max(d),200);
-    cols    = lines(numel(candTypes));
-
+    d = dataCell{i};
+    x_rng = linspace(min(d),max(d),200); %x values for plot
+    cols = lines(numel(candTypes)); %change colors
+    pVals = zeros(1,numel(candTypes)); %hold values
+    logLikes = zeros(1,numel(candTypes));%hold values
+    pdFits = cell(1,numel(candTypes));  %hold objects
+    
     subplot(2,2,i);
-    % increased bin size to 42 to make it snappier
-    thebigoleoneoffourhistograms= histogram(d, 42, 'Normalization','pdf');
-    % handle visibility should correct our legend issue
-    set(thebigoleoneoffourhistograms,'HandleVisibility','off'); 
-    hold on; 
-    for j = 1:numel(candTypes)
-        pdFits{j} = fitdist(d,candTypes{j});           % original fit
-        [~,pVals(j)] = kstest(d,'CDF',pdFits{j});      % original KS test
-        plot(x_rng, pdf(pdFits{j},x_rng), ...
-             'Color',cols(j,:),'LineWidth',1.5);
+    h = histogram(d,42,'Normalization','pdf'); hold on;
+    set(h,'HandleVisibility','off'); %correct display issue
+    for j=1:numel(candTypes)
+        pdFits{j} = fitdist(d,candTypes{j}); %fit data
+        [~,pVals(j)] = kstest(d,'CDF',pdFits{j}); %ks test
+        logLikes(j) = sum(log(pdf(pdFits{j},d))); %lkog l
+        plot(x_rng, pdf(pdFits{j},x_rng), 'Color',cols(j,:),'LineWidth',1.5); % overlay pdf fit
+
     end
-    title(['Fits for ', dataNames{i}]);
+
+    %Formatting
+    hold off;
+    title(['Fits for ',dataNames{i}]);
     xlabel('speed (mph)'); ylabel('pdf');
     legend(candTypes,'Location','best','FontSize',6);
-    hold off;
-
-    % Store best
-    [~,bestIdx]      = max(pVals);
-    bestPD(i).name  = candTypes{bestIdx};
-    bestPD(i).pd    = pdFits{bestIdx};
     
-    % Display all candidate functions parameters along with KS p‐value
-fprintf('\nParameters for %s:\n', dataNames{i});
-for j = 1:numel(candTypes)
-    pdj = pdFits{j};
-    switch candTypes{j}
-      case 'Normal'
-        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
-                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
-      case 'Lognormal'
-        fprintf('  %-8s  mu = %.3f, sigma = %.3f,  KS p = %.3f\n', ...
-                candTypes{j}, pdj.mu, pdj.sigma, pVals(j));
-      case 'Gamma'
-        fprintf('  %-8s  a = %.3f, b = %.3f,       KS p = %.3f\n', ...
-                candTypes{j}, pdj.a, pdj.b, pVals(j));
-      case 'Weibull'
-        fprintf('  %-8s  A = %.3f, B = %.3f,       KS p = %.3f\n', ...
-                candTypes{j}, pdj.A, pdj.B, pVals(j));
+    % pick the KS‐best and LL‐best
+    [~,idxKS] = max(pVals); %index of max KS p values
+    [~,idxLL] = max(logLikes); %index of max logL values
+    bestPD_KS(i) = struct('name',candTypes{idxKS}, 'pd',pdFits{idxKS});
+    bestPD_LL(i) = struct('name',candTypes{idxLL}, 'pd',pdFits{idxLL});
+    
+    % print out
+    fprintf('\n%s: KS→%-8s (p=%.3f),  LL→%-8s (logL=%.1f)\n', ...
+            dataNames{i}, ...
+            candTypes{idxKS}, pVals(idxKS), ...
+            candTypes{idxLL}, logLikes(idxLL));
+    for j=1:numel(candTypes)
+        pdj = pdFits{j};
+        switch candTypes{j}
+          case {'Normal','Lognormal'}
+            fprintf('   %-8s mu=%.3f σ=%.3f  p=%.3f  logL=%.1f\n', ...
+                    candTypes{j}, pdj.mu, pdj.sigma, pVals(j), logLikes(j));
+          case 'Gamma'
+            fprintf('   %-8s a=%.3f b=%.3f  p=%.3f  logL=%.1f\n', ...
+                    candTypes{j}, pdj.a, pdj.b, pVals(j), logLikes(j));
+          case 'Weibull'
+            fprintf('   %-8s A=%.3f B=%.3f  p=%.3f  logL=%.1f\n', ...
+                    candTypes{j}, pdj.A, pdj.B, pVals(j), logLikes(j));
+        end
     end
 end
-fprintf('  → selected: %s\n', bestPD(i).name);
-end
 
-%all QQplots in one 2×2 subplot
-figure('Name','All QQ Plots','NumberTitle','off');
-for i = 1:4
-    d    = dataCell{i};               % same as before
-    nPts = numel(d);
-
+%plot QQ‐plots X2
+figure('Name','QQ Plots (KS winners)','NumberTitle','off');
+for i=1:4
     subplot(2,2,i);
-    qqplot(d, random(bestPD(i).pd,nPts,1)); 
-    title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
-
-    % is this part nesescary, can instead 
-    % we just list all the results out in the command window 
-    % and provide selection criteria
-    switch bestPD(i).name 
-        case 'Normal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
-                bestPD(i).pd.mu, bestPD(i).pd.sigma);
-        case 'Lognormal'
-            fprintf('  estimated mu = %.4f, sigma = %.4f\n', ...
-                bestPD(i).pd.mu, bestPD(i).pd.sigma);
-        case 'Gamma'
-            fprintf('  estimated a (shape) = %.4f, b (scale) = %.4f\n', ...
-                bestPD(i).pd.a, bestPD(i).pd.b);
-        case 'Weibull'
-            fprintf('  estimated A (scale) = %.4f, B (shape) = %.4f\n', ...
-                bestPD(i).pd.A, bestPD(i).pd.B);
-
-    end
-    % % show qq plot for best candidate
-    % figure;
-    % qqplot(d, random(bestPD(i).pd, nPts, 1));
-    % title(['qq plot for ', dataNames{i}, ' best fit: ', bestPD(i).name]);
+    qqplot(dataCell{i}, random(bestPD_KS(i).pd,numel(dataCell{i}),1));
+    title([dataNames{i} ' KS winner: ' bestPD_KS(i).name]);
 end
+
+figure('Name','QQ Plots (LL winners)','NumberTitle','off');
+for i=1:4
+    subplot(2,2,i);
+    qqplot(dataCell{i}, random(bestPD_LL(i).pd,numel(dataCell{i}),1));
+    title([dataNames{i} ' LL winner: ' bestPD_LL(i).name]);
+end
+
 %% Part 2: Run simulation with user inputs
 disp(' ');
 disp('Entering simulation phase! Press Ctrl+C to abort at any time.');
@@ -122,6 +104,14 @@ nT = input('Enter number of trips to simulate [1–9999, default = 1000]: ');
 if isempty(nT), nT = 1000; end
 if nT < 1 || nT > 9999
     error('Number of trips must be between 1 and 9999.');
+end
+
+%Prompt for fit choice ks or LogL
+fitChoice = input('Use KS fits or LL fits? Enter ''KS'' (default) or ''LL'' (Fred''s Favorite): ', 's' );
+if isempty(fitChoice) || strcmpi(fitChoice,'KS')
+    bestPD = bestPD_KS;
+else strcmpi(fitChoice,'LL');
+    bestPD = bestPD_LL;
 end
 
 % Prompt for confidence level
