@@ -158,12 +158,12 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     %%%delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
     %%%parpool('local',6);%change this to whatever your computer and license will allow
     c = parcluster('local');
-    c.NumWorkers = 13; %Increase its maximum workers to n     
+    c.NumWorkers = 6; %Increase its maximum workers to n     
     c.saveProfile; %lock it in    
     %Restart any existing pool for reliability 
     %start a new one with n workers
     delete(gcp('nocreate'));
-    parpool(c, 13);
+    parpool(c, 6);
     
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
@@ -294,13 +294,13 @@ title('Baseline speed draws from fitted distributions');
             tBase(i) = NaN; tPred(i) = NaN;
             continue;
         end
-        tBase(i) = tB;
+        tBase(i) = tB / spdBaseAll(e) * 60; % assuming tB is really distance
         
         [pP, tP] = shortestpath(Gp, sn, en, 'Method','positive');%from word doc
         if isempty(pP)
             tPred(i) = NaN;
         else
-            tPred(i) = tP;
+            tPred(i) = tP / spdEff(e) * 60; % assuming tP is really distance
         end
         
         if length(pP) ~= length(pB) || any(pP ~= pB)
