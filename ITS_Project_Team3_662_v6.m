@@ -146,58 +146,17 @@ if uniq < 1 || uniq > 20
     error('Oversample parameter must be between 1 and 20.');
 end
 
-allCond = [];
-for col = 1:width(T_roadcond_data)
-    allCond = [allCond; T_roadcond_data{:,col}];
+nVal = input('Enter # validation replications [1–10000, default = 100]: ');
+if isempty(nVal), nVal = 100; end
+if nVal < 1 || nVal > 10000
+    error('# of validation replications must be between 1 and 10000.');
 end
 
-%kill case sensitivity!!
-condStr = lower(string(allCond));
-
-%pull data for each type
-pNorm = sum(condStr=="normal")/ numel(condStr);
-pAcc  = sum(condStr=="accident")/ numel(condStr);
-pCons = sum(condStr=="construction")/ numel(condStr);
-if pNorm==0 && pAcc==0 && pCons==0
-    %Diagnostic - tell user if the data isnt matching
-    pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
-            fprintf('*** Diagnostic: no road-condition labels matched, using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n', ...
-             pNorm, pAcc, pCons);
-end
-cProbs = [pNorm, pAcc, pCons];
-mpH = 60;  % minutes per hour
-Gp = G;
-ne = height(Gp.Edges);
-rv = rand(ne,1);
-cp = cumsum(cProbs);
-spdEff = zeros(ne,1);
-for e = 1:ne
-    % find nominal distribution based on edge speed
-    if Gp.Edges.Speed(e)==65
-        nomPD = bestPD(1).pd;
-    else
-        nomPD = bestPD(2).pd;
-    end
-    if rv(e) <= cp(1)
-        % normal- use nominal distribution
-        spdEff(e) = random(nomPD);
-    elseif rv(e) <= cp(2)
-        % accident use S15 distribution
-        spdEff(e) = random(bestPD(4).pd);
-    else
-        % construction- use S40 distribution
-        spdEff(e) = random(bestPD(3).pd);
-    end
-end
-
-spdEffAll(:,i) = spdEff; % collect diagnostic data
-Gp.Edges.Weight = Gp.Edges.Distance ./ spdEff * mpH; % weight of 
-
-simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, Gp);
+simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data);
 
 
 %% simulate ITS
-function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, Gp)
+function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     % this function runs the routing simulation using the best fit speed distributions
     % bestPD is a structure array with fields:
     %   bestPD(1): best fit for S65 (nominal interstate speeds)
@@ -209,19 +168,19 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, G
     %%%delete(gcp('nocreate')) %clear out the pool in case theres soemthing idle in t here
     %%%parpool('local',6);%change this to whatever your computer and license will allow
     c = parcluster('local');
-    c.NumWorkers = 4; %Increase its maximum workers to n     
+    c.NumWorkers = 13; %Increase its maximum workers to n     
     c.saveProfile; %lock it in    
     %Restart any existing pool for reliability 
     %start a new one with n workers
     delete(gcp('nocreate'));
-    parpool(c, 4);
+    parpool(c, 13);
     
     %% generate trips 
     trips = genlogntrips(G, nT, confLev, mu, sigma, uniq);
     
     % Verify trip length is 10 mi on avg, with sigma 33miles (requirement 11)
 
-        d = trips(:,3)/100;  % convert back from hundredths of a mile
+    d = trips(:,3)/100;  % convert back from hundredths of a mile
     fprintf('Empirical trip distances: mean = %.2f miles, std = %.2f miles\n', ...
             mean(d), std(d));
 
@@ -268,8 +227,54 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, G
     ne = height(G.Edges);
     % nScenarios = 10;
     % spdEffScenarios = zeros(ne, nScenarios);
+
+    allCond = [];
+    for col = 1:width(T_roadcond_data)
+        allCond = [allCond; T_roadcond_data{:,col}];
+    end
+    
+    %kill case sensitivity!!
+    condStr = lower(string(allCond));
+    
+    %pull data for each type
+    pNorm = sum(condStr=="normal")/ numel(condStr);
+    pAcc  = sum(condStr=="accident")/ numel(condStr);
+    pCons = sum(condStr=="construction")/ numel(condStr);
+    if pNorm==0 && pAcc==0 && pCons==0
+        %Diagnostic - tell user if the data isnt matching
+        pNorm = 0.90; pAcc = 0.05; pCons = 0.05;
+                fprintf('*** Diagnostic: no road-condition labels matched, using defaults: pNorm=%.2f, pAcc=%.2f, pCons=%.2f\n', ...
+                 pNorm, pAcc, pCons);
+    end
+    cProbs = [pNorm, pAcc, pCons];
+    mpH = 60;  % minutes per hour
+    Gp = G;
+    ne = height(Gp.Edges);
+    rv = rand(ne,1);
+    cp = cumsum(cProbs);
+    spdEff = zeros(ne,1);
     %% actual simulation loop
     for i = 1:nT
+        rv = rand(numE,1);
+        spdEff = zeros(numE,1);
+        for e = 1:numE
+            if G.Edges.Speed(e) == 65
+                nomPD = bestPD(1).pd;
+            else
+                nomPD = bestPD(2).pd;
+            end
+
+            if rv(e) <= cp(1)
+                spdEff(e) = random(nomPD);
+            elseif rv(e) <= cp(2)
+                spdEff(e) = random(bestPD(4).pd);
+            else
+                spdEff(e) = random(bestPD(3).pd);
+            end
+        end
+
+        spdEffAll(:, i) = spdEff; % Store per-trip draw
+        Gp.Edges.Weight = G.Edges.Distance ./ spdEff * mpH;
         sn = trips(i,1);  
         en = trips(i,2);  
         [pB, tB] = shortestpath(Gb, sn, en, 'Method','positive');
@@ -340,8 +345,6 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, G
 end
 
 %% Part 4: validation using Monte Carlo replications
-nVal = input('Enter # validation replications (default 100): ');
-if isempty(nVal), nVal = 100; end
 validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data, nVal)
 
 function validateITS(nT, confLev, mu, sigma, uniq, bestPD, G, Tcond, nVal)
