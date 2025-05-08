@@ -332,31 +332,6 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     ciLo = mSave - err;
     ciHi = mSave + err;
 
-    %verify sim LogNormal mu and sigma
-    pdTarget = makedist('Lognormal','mu',1,'sigma',1.6');
-
-    % Kolmogorov–Smirnov test
-    [h,p] = kstest(savings,'CDF',pdTarget);
-    fprintf('Savings ~ LogN(1,1.6)? h=%d (0=pass), p=%.3f\n', h, p);
-
-    %histogram + theoretical PDF overlay
-    figure;
-    histogram(savings, 45, 'Normalization','pdf');
-    hold on;
-      x = linspace(min(savings), max(savings), 200);
-      plot(x, pdf(pdTarget,x), 'r-','LineWidth',1.5);
-    hold off;
-    title('Savings: empirical vs LogNormal(\mu=1,\sigma=1.6)');
-    xlabel('Time savings (%)');
-    ylabel('PDF');
-    legend('Empirical','LogNormal fit');
-
-    %QQ-plot against the target distribution
-    figure;
-    qqplot(savings, random(pdTarget,numel(savings),1));
-    title('QQ plot: savings vs LogNormal(\mu=1,\sigma=1.6)');
-    
-    
     % display results
     fprintf('\npredictive routing savings:\n');
     fprintf('mean: %.2f%%, 95%% ci: [%.2f%%, %.2f%%]\n', mSave, ciLo, ciHi);
