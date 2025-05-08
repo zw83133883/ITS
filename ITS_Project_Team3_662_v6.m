@@ -193,14 +193,36 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
     % Gb.Edges.Weight = Gb.Edges.Distance ./ Gb.Edges.Speed * mpH; % weight by time
     
     % Diagnostic output baseline 
-    xlimrange = [0, 100]
+    xlimrange = [0, 100];
     figure('Name','Diagnostic: Speed Draws','NumberTitle','off');
     subplot(2,1,1);
     histogram(Gb.Edges.Speed,'Normalization','pdf');
     xlabel('speed (mph)');
     ylabel('pdf');
     title('Baseline speed draws (spdBase)');
-    xlim(xlimrange)
+    xlim(xlimrange);
+
+    %diagnostic basline speed spread
+    spdBaseAll = zeros(numE,nT);
+    for run=1:nT
+      for e=1:numE
+        % pick the correct PD for edge e (65 or 50)
+        if    G.Edges.Speed(e)==65, nomPD = bestPD(1).pd;
+        else                      nomPD = bestPD(2).pd;
+        end
+        spdBaseAll(e,run) = random(nomPD);
+      end
+    end
+    figure; histogram(spdBaseAll(:),'Normalization','pdf');
+    xlabel('baseline speed (mph)');
+    ylabel('pdf');
+    title('Baseline speed draws from fitted distributions');
+
+% then
+figure; histogram(spdBaseAll(:),'Normalization','pdf');
+xlabel('baseline speed (mph)');
+ylabel('pdf');
+title('Baseline speed draws from fitted distributions');
 
     % preallocate for collecting every predictive-speed draw
     % clear it out in case we keep re-running and muck up the memory
@@ -286,8 +308,10 @@ function simulateITS(nT, confLev, mu, sigma, uniq, bestPD, G, T_roadcond_data)
         end
     end
     % Diagnostic- show predictive-speed draws
-    subplot(2,1,2);
-    histogram(spdEffAll(:),'Normalization','pdf');
+    tiledlayout(3,1);
+    nexttile; histogram(Gb.Edges.Speed,'Normalization','pdf'); …
+    nexttile; histogram(spdEffAll(:),'Normalization','pdf'); …
+    nexttile; histogram(spdBaseAll(:),'Normalization','pdf'); …
     xlabel('speed (mph)');
     ylabel('pdf');
     title('Predictive speed draws (all spdEff)');
